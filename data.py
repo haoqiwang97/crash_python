@@ -30,7 +30,8 @@ def read_data(name='IntDataV1.csv', is_small=True, is_remove_cols=True):
                 'tot_WMT_sqmi', 'log_tot_WMT', 'log_tot_WMT_pop', 'log_tot_WMT_sqmi', 'tot_crash_count']
     :return:
     """
-    cols_drop = ['int_id', 'descr', 'junction', 'center', 'ped_crash_count', 'Austin', 'ped_crash_count_fatal']
+    cols_drop = ['int_id', 'descr', 'junction', 'center',
+                 'ped_crash_count', 'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor']
 
     cols_log = ['log_DVMT_major',
                 'log_DVMT_minor',
@@ -58,5 +59,5 @@ def read_data(name='IntDataV1.csv', is_small=True, is_remove_cols=True):
 
 
 if __name__ == '__main__':
-    df1 = read_data(name='tx_crash.csv')
-    df2 = read_data(name='tx_crash.csv', is_remove_cols=False)
+    df = read_data()
+    #df2 = read_data(name='tx_crash.csv', is_remove_cols=False)
