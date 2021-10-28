@@ -139,5 +139,6 @@ def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_fea
 
 
 if __name__ == '__main__':
-    df = read_data(is_feat_engineering=True)
+    #df = read_data(is_feat_engineering=True)
     # df2 = read_data(name='tx_crash.csv', is_remove_cols=False)
+    X_train, y_train, X_val, y_val, X_test, y_test = load_datasets()
