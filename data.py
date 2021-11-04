@@ -15,6 +15,22 @@ from sklearn.compose import make_column_selector as selector
 from sklearn.model_selection import train_test_split
 
 
+def read_raw(name='IntDataV1.csv'):
+    df_path = 'data/' + name
+
+    df = pd.read_csv(df_path).dropna()
+
+    df["midblock_sig"] = df["midblock_sig"].astype(np.int64)
+    
+    cols_int_to_float = ['transit_stops_025mi_count',
+        'lane_width_ft_major', 'median_width_ft_major', 'shoulder_width_ft_major',
+        'median_width_ft_minor']
+    
+    for i in cols_int_to_float:
+        df[i] = df[i].astype(np.float64)
+    return df
+
+
 def read_data(name='IntDataV1.csv', is_small=True, is_remove_cols=True, is_classify=True, is_feat_engineering=False, is_remove_lon_lat=False):
     """
     Read all data
@@ -48,18 +64,7 @@ def read_data(name='IntDataV1.csv', is_small=True, is_remove_cols=True, is_class
     cols_drop.extend(cols_log)
     # cols_keep = list(set(cols_all) - set(cols_drop))
 
-    df_path = 'data/' + name
-
-    df = pd.read_csv(df_path).dropna()
-
-    df["midblock_sig"] = df["midblock_sig"].astype(np.int64)
-    
-    cols_int_to_float = ['transit_stops_025mi_count',
-        'lane_width_ft_major', 'median_width_ft_major', 'shoulder_width_ft_major',
-        'median_width_ft_minor']
-    
-    for i in cols_int_to_float:
-        df[i] = df[i].astype(np.float64)
+    df = read_raw(name=name)
     
     if is_remove_cols:
         # df = pd.read_csv(df_path, usecols=cols_keep).dropna()
@@ -112,15 +117,8 @@ def transform_data_log1p(df, is_transform_y=True):
     return df
 
 
-def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_feat_engineering=False, is_remove_lon_lat=False):
-    df = read_data(is_small=is_small, is_remove_cols=is_remove_cols, is_classify=is_classify, is_feat_engineering=is_feat_engineering, is_remove_lon_lat=is_remove_lon_lat)
-    
-    df_X = df.drop(columns='tot_crash_count')
-    df_y = df['tot_crash_count']
-    
-    X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.1, random_state=1)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=1)
-    
+def transform_data_nn(X_train, X_val, X_test):
+    # transform data for neural network
     numeric_transformer = StandardScaler()
     categorical_transformer = OneHotEncoder()
     
@@ -134,7 +132,61 @@ def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_fea
     X_train = preprocessor.transform(X_train)
     X_val = preprocessor.transform(X_val)
     X_test = preprocessor.transform(X_test)
+    return X_train, X_val, X_test
 
+
+def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_feat_engineering=False, is_remove_lon_lat=False):
+    df = read_data(is_small=is_small, is_remove_cols=is_remove_cols, is_classify=is_classify, is_feat_engineering=is_feat_engineering, is_remove_lon_lat=is_remove_lon_lat)
+    
+    df_X = df.drop(columns='tot_crash_count')
+    df_y = df['tot_crash_count']
+    
+    X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.1, random_state=1)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=1)
+    
+    X_train, X_val, X_test = transform_data_nn(X_train, X_val, X_test)
+    
+    return X_train, y_train, X_val, y_val, X_test, y_test
+
+
+def load_datasets_severities_sum():
+    df = read_raw()
+    
+    # drop some columns
+    cols_drop = ['descr', 'junction', 'center',
+                 'ped_crash_count', 'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor',
+                 'lon', 'lat']
+    cols_log = ['log_DVMT_major',
+                'log_DVMT_minor',
+                'log_tot_WMT',
+                'log_tot_WMT_pop',
+                'log_tot_WMT_sqmi']
+    cols_drop.extend(cols_log)
+    df = df.drop(columns=cols_drop)
+    
+    # read y by severities
+    new_y = pd.read_csv("data/crash_int_severities_years.csv")
+    new_y['sev_small'] = new_y['sev_notinjured'] + new_y['sev_unknown']
+    new_y = new_y.groupby(['int_id']).agg({'sev_small': 'sum',
+                                           'sev_incapac': 'sum',
+                                           'sev_nonincapac': 'sum',
+                                           'sev_possible': 'sum',
+                                           'sev_killed': 'sum'})
+    
+    # merge data
+    df = pd.merge(df, new_y, how='left', on='int_id')
+    df = df.fillna(0)
+    df = df.drop(columns = ['int_id', 'tot_crash_count'])
+    
+    df_X = df.drop(columns=['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed'])
+    df_y = df[['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed']]
+    
+    # split data
+    X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.1, random_state=1)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=1)
+    
+    X_train, X_val, X_test = transform_data_nn(X_train, X_val, X_test)
+    
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
