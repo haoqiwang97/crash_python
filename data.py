@@ -132,7 +132,7 @@ def transform_data_nn(X_train, X_val, X_test):
     X_train = preprocessor.transform(X_train)
     X_val = preprocessor.transform(X_val)
     X_test = preprocessor.transform(X_test)
-    return X_train, X_val, X_test
+    return X_train, X_val, X_test, preprocessor
 
 
 def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_feat_engineering=False, is_remove_lon_lat=False):
@@ -144,9 +144,9 @@ def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_fea
     X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.1, random_state=1)
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=1)
     
-    X_train, X_val, X_test = transform_data_nn(X_train, X_val, X_test)
+    X_train, X_val, X_test, preprocessor = transform_data_nn(X_train, X_val, X_test)
     
-    return X_train, y_train, X_val, y_val, X_test, y_test
+    return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor
 
 
 def load_datasets_severities_sum():
@@ -185,9 +185,9 @@ def load_datasets_severities_sum():
     X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.1, random_state=1)
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=1)
     
-    X_train, X_val, X_test = transform_data_nn(X_train, X_val, X_test)
+    X_train, X_val, X_test, preprocessor = transform_data_nn(X_train, X_val, X_test)
     
-    return X_train, y_train, X_val, y_val, X_test, y_test
+    return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor
 
 
 if __name__ == '__main__':

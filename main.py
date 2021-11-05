@@ -11,7 +11,7 @@ def _parse_args():
     #parser.add_argument('--model', type=str, default="TrivialNN", help="model to run")
     parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
-    parser.add_argument('--num_epochs', type=int, default=50, help='number of epochs to train for')
+    parser.add_argument('--num_epochs', type=int, default=10, help='number of epochs to train for')
     parser.add_argument('--hidden_size', type=int, default=100, help='hidden layer size')
     parser.add_argument('--batch_size', type=int, default=100, help='training batch size; 1 by default')
     
@@ -42,11 +42,11 @@ if __name__ == '__main__':
     # Train and evaluate
     start_time = time.time()
     if args.model == "TrivialNN":
-        X_train, y_train, X_val, y_val, X_test, y_test = load_datasets(is_remove_lon_lat=True)
+        X_train, y_train, X_val, y_val, X_test, y_test, preprocessor = load_datasets(is_remove_lon_lat=True)
         print("%i train exs, %i dev exs, %i test exs" % (len(y_train), len(y_val), len(y_test)))
         model = train_trivialnn(args, X_train, y_train, X_val, y_val)
     elif args.model == "SeveritySumNN":
-        X_train, y_train, X_val, y_val, X_test, y_test = load_datasets_severities_sum()
+        X_train, y_train, X_val, y_val, X_test, y_test, preprocessor = load_datasets_severities_sum()
         print("X_train.shape", X_train.shape, "y_train.shape", y_train.shape,
               "\nX_val.shape", X_val.shape, "y_val.shape", y_val.shape,
               "\nX_test.shape", X_test.shape, "y_test.shape", y_test.shape)
