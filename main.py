@@ -27,18 +27,18 @@ def evaluate(args, classifier, X_all, y_all):
     elif args.model == "SeveritySumNN":
         y_all = torch.from_numpy(np.array(y_all)).float()
     
-    y_pred = np.zeros_like(y_all)
+    # y_pred = np.zeros_like(y_all)
     
-    for idx, X in enumerate(X_all):
-        y_pred[idx] = classifier.predict(X)
+    # for idx, X in enumerate(X_all):
+    #     y_pred[idx] = classifier.predict(X)
         
+    y_pred = classifier.predict(X_all)    
     return print_evaluation(y_all, y_pred)
         
 if __name__ == '__main__':
     args = _parse_args()
     print(args)
     
-    # TODO: print shape
     # Train and evaluate
     start_time = time.time()
     if args.model == "TrivialNN":
@@ -46,7 +46,7 @@ if __name__ == '__main__':
         print("%i train exs, %i dev exs, %i test exs" % (len(y_train), len(y_val), len(y_test)))
         model = train_trivialnn(args, X_train, y_train, X_val, y_val)
     elif args.model == "SeveritySumNN":
-        X_train, y_train, X_val, y_val, X_test, y_test, preprocessor = load_datasets_severities_sum()
+        X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names = load_datasets_severities_sum()
         print("X_train.shape", X_train.shape, "y_train.shape", y_train.shape,
               "\nX_val.shape", X_val.shape, "y_val.shape", y_val.shape,
               "\nX_test.shape", X_test.shape, "y_test.shape", y_test.shape)
@@ -64,4 +64,10 @@ if __name__ == '__main__':
     train_eval_time = time.time() - start_time
     print("Time for training and evaluation: %.2f seconds" % train_eval_time)
     
-    # TODO: gpu, batch size
+    # t1 = model.predict(torch.from_numpy(np.array(X_val)).float())
+    # # y_pred_new = self.classifier.predict(X_new)
+    
+    # # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
+    # np.mean(t1, axis=0)
+    # self.sensitivity_list.append(np.mean((t1.numpy() - t1.numpy()) / t1.numpy(), axis=0))
+    

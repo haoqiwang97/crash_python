@@ -21,6 +21,8 @@ def read_raw(name='IntDataV1.csv'):
     df = pd.read_csv(df_path).dropna()
 
     df["midblock_sig"] = df["midblock_sig"].astype(np.int64)
+    df["approaches"] = df["approaches"].astype(np.float64)
+    df["lanes_major"] = df["lanes_major"].astype(np.float64)
     
     cols_int_to_float = ['transit_stops_025mi_count',
         'lane_width_ft_major', 'median_width_ft_major', 'shoulder_width_ft_major',
@@ -154,7 +156,8 @@ def load_datasets_severities_sum():
     
     # drop some columns
     cols_drop = ['descr', 'junction', 'center',
-                 'ped_crash_count', 'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor',
+                 'ped_crash_count', 
+                 'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor',
                  'lon', 'lat']
     cols_log = ['log_DVMT_major',
                 'log_DVMT_minor',
@@ -176,18 +179,19 @@ def load_datasets_severities_sum():
     # merge data
     df = pd.merge(df, new_y, how='left', on='int_id')
     df = df.fillna(0)
-    df = df.drop(columns = ['int_id', 'tot_crash_count'])
+    df = df.drop(columns = ['int_id'])
     
-    df_X = df.drop(columns=['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed'])
-    df_y = df[['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed']]
+    df_X = df.drop(columns=['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count'])
     
+    y_col_names = ['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count']
+    df_y = df[y_col_names]
     # split data
-    X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.1, random_state=1)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=1)
+    X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.05, random_state=1)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.05, random_state=1)
     
     X_train, X_val, X_test, preprocessor = transform_data_nn(X_train, X_val, X_test)
     
-    return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor
+    return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names
 
 
 if __name__ == '__main__':

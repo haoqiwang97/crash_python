@@ -15,6 +15,7 @@ import torch
 
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def print_evaluation(y_val, y_val_pred):
@@ -72,51 +73,164 @@ get_sentitivity <- function(data, columns, model){
 }
 """
 
+def custom_replace(tensor, on_zero=1, on_non_zero=0):
+    # we create a copy of the original tensor, 
+    # because of the way we are replacing them.
+    res = tensor.clone()
+    res[tensor==0] = on_zero
+    res[tensor!=0] = on_non_zero
+    return res
+
+
 class SensitivityNN():
     # sensitivity analysis for neural network
-    def __init__(self, classifier, X, y, col_names):
+    def __init__(self, classifier, X, y, x_col_names, y_col_names):
         self.classifier = classifier
         self.X = X
         self.y = y
-        self._y_pred()
-        self.col_names = col_names
-        self.sensitivity_list = np.zeros((len(col_names), y.shape[1]))
+        #self.y_pred = self._y_pred(X, y)
+        self.y_pred = self.classifier.predict(X)
+        self.x_col_names = x_col_names
+        self.y_col_names = y_col_names
+        self._features_list()
+        # self.sensitivity_list = np.zeros((self.n_features, y.shape[1]))
+        self.sensitivity_list = []
     
-    def _y_pred(self):
-        y_pred = np.zeros_like(self.y)
-        for idx, X in enumerate(self.X):
+    def _y_pred(self, X, y):
+        y_pred = np.zeros_like(y)
+        for idx, X in enumerate(X):
             y_pred[idx] = self.classifier.predict(X)
-        self.y_pred = y_pred
+        # y_pred = self.classifier.predict(X)
+        return y_pred
         
-    def sensitivity_by_column(self, col_idx):
+    def _features_list(self):
+        num_features_list = []
+        cat_features_list = []
+        x_col_names_compact =[]
+        
+        for idx, value in enumerate(self.x_col_names):
+            if value.startswith('num'):
+                num_features_list.append(idx)
+                x_col_names_compact.append(value)
+            else:
+                cat_features_list.append(idx)
+                if idx % 2 == 0:
+                    x_col_names_compact.append(value)
+        
+        n_features = int(len(num_features_list) + len(cat_features_list)/2)
+        self.num_features_list = num_features_list
+        self.cat_features_list = cat_features_list
+        self.n_features = n_features
+        self.x_col_names_compact = x_col_names_compact
+        
+    def sensitivity_by_column_num(self, col_idx):
         # add standard deviation for numerical variables
         # switch 1 and 0 for indicator variables?
-        X_new = self.X
+        X_new = self.X.clone()
         # select numerical variables
         X_new[:, col_idx] += torch.std(X_new[:,col_idx])
 
-        y_pred_new = np.zeros_like(self.y_pred)
-        for idx, X in enumerate(X_new):
-            y_pred_new[idx] = self.classifier.predict(X)
-            
-        self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
+        # y_pred_new = np.zeros_like(self.y_pred)
+        # for idx, X in enumerate(X_new):
+        #     y_pred_new[idx] = self.classifier.predict(X)
+        
+        # y_pred_new = self._y_pred(X_new, self.y_pred)
+        y_pred_new = self.classifier.predict(X_new)
+        
+        # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
+        self.sensitivity_list.append(np.mean((y_pred_new.numpy() - self.y_pred.numpy()) / self.y_pred.numpy(), axis=0))
         #.append(np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0))
+
+    def sensitivity_by_column_cat(self, col_idx):
+        X_new = self.X.clone()
+        X_new[:, col_idx] = custom_replace(X_new[:, col_idx])
+        X_new[:, col_idx+1] = custom_replace(X_new[:, col_idx+1])
+        
+        # y_pred_new = np.zeros_like(self.y_pred)
+        # for idx, X in enumerate(X_new):
+        #     y_pred_new[idx] = self.classifier.predict(X)
+        
+        # y_pred_new = self._y_pred(X_new, self.y_pred)
+        y_pred_new = self.classifier.predict(X_new)
+        # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
+        self.sensitivity_list.append(np.mean((y_pred_new.numpy() - self.y_pred.numpy()) / self.y_pred.numpy(), axis=0))
         
     def calc_sensitivity(self):
-        for i in range(2):
-            self.sensitivity_by_column(i)
-    
-    def plot(self):
+        for i in self.num_features_list:
+            self.sensitivity_by_column_num(i)
+            print(i, self.x_col_names[i], "--sensitivity calculated!")
+        
+        for i in self.cat_features_list[::2]:
+            self.sensitivity_by_column_num(i)
+            print(i, self.x_col_names[i], "--sensitivity calculated!")
+            
+    def plot(self, is_save_figure=False, figure_name=None):
         # plot sensitivity
-        pass
+
+        plot_label_names = []
+        for value1 in self.x_col_names_compact:
+            for value2 in self.y_col_names:
+                plot_label_names.append(value1 + ": " + value2)
+        
+        plot_values = np.array(self.sensitivity_list)
+        fig, ax = plt.subplots(figsize=[12, 40])
+        
+        ax.barh(plot_label_names, plot_values.flatten())
+        ax.set(#xlim=(0, 10), ylim=(-2, 2),
+               #xlabel='x', ylabel='sin(x)',
+               title='Sensitivity analysis');
+        
+        #xticks = ax.get_xticks()
+        #ax.set_xticklabels(['{:,.2%}'.format(x) for x in xticks])
+        
+        plt.tight_layout()
+        
+        if is_save_figure:
+            name = figure_name + '.pdf'
+            fig.savefig(name)
+            
+        #return fig
+   
 
 
-# temp = SensitivityNN(model, torch.from_numpy(np.array(X_val)).float(), y_val, preprocessor.get_feature_names_out())
+# temp = SensitivityNN(model, torch.from_numpy(np.array(X_val)).float(), y_val, preprocessor.get_feature_names_out(), y_col_names)
 # temp.y_pred
+# temp.col_names
+
+
+# temp.X[:,29]
+# custom_replace(temp.X[:,29])
+
 # temp.calc_sensitivity()
 # temp.sensitivity_list
+
+# t2 = np.array(temp.sensitivity_list)
+# t3 = t2.flatten()
+
+# plt.plot(t3)
+
+
+
+        
+#plt.barh(plot_label_names, t3)
+
+# import matplotlib.ticker as mtick
+
+
 if __name__ == '__main__':
     pass
-    #print_evaluation(y_train, np.zeros_like(y_train))
-    #print_evaluation(y_val, np.zeros_like(y_val))
 
+    sens = SensitivityNN(classifier=model, 
+                          X=torch.from_numpy(np.array(X_val)).float(), 
+                          y=y_val, 
+                          x_col_names=preprocessor.get_feature_names_out(), 
+                          y_col_names=y_col_names)
+    
+    sens = SensitivityNN(classifier=model, 
+                          X=torch.from_numpy(np.array(X_train)).float(), 
+                          y=y_train, 
+                          x_col_names=preprocessor.get_feature_names_out(), 
+                          y_col_names=y_col_names)
+    
+    sens.calc_sensitivity()
+    sens.plot(is_save_figure=True, figure_name="test2_val")

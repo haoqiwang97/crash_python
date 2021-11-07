@@ -142,7 +142,7 @@ def train_severity_sum_nn(args, X_train, y_train, X_val, y_val):
     
     inp_size = X_train.shape[1]
     hid_size = args.hidden_size
-    out_size = 5
+    out_size = y_train.shape[1]
     
     n_epochs = args.num_epochs
     batch_size = args.batch_size
