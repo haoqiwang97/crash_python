@@ -151,6 +151,13 @@ def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_fea
     return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor
 
 
+def read_new_y(path="data/crash_int_severities_years.csv"):
+    # read y by severities
+    new_y = pd.read_csv(path)
+    new_y['sev_small'] = new_y['sev_notinjured'] + new_y['sev_unknown']
+    return new_y
+    
+
 def load_datasets_severities_sum():
     df = read_raw()
     
@@ -167,9 +174,7 @@ def load_datasets_severities_sum():
     cols_drop.extend(cols_log)
     df = df.drop(columns=cols_drop)
     
-    # read y by severities
-    new_y = pd.read_csv("data/crash_int_severities_years.csv")
-    new_y['sev_small'] = new_y['sev_notinjured'] + new_y['sev_unknown']
+    new_y = read_new_y()
     new_y = new_y.groupby(['int_id']).agg({'sev_small': 'sum',
                                            'sev_incapac': 'sum',
                                            'sev_nonincapac': 'sum',
@@ -192,6 +197,32 @@ def load_datasets_severities_sum():
     X_train, X_val, X_test, preprocessor = transform_data_nn(X_train, X_val, X_test)
     
     return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names
+
+
+def load_datasets_severities_ind():
+    pass
+    new_y = read_new_y()
+    df = read_raw()
+    
+    y_col_names = ['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed']
+    new_y = new_y[y_col_names]
+    year = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019]
+    
+    # np.sort(new_y['year'].unique())
+    # [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019]
+    # input 2010 - 2018, predict 2019
+    
+    # new_y['int_id'].nunique() = 381513
+    # df['int_id'].nunique() = 707152
+    temp = new_y.head(10000)
+    
+    new_y_sparse = pd.DataFrame(data=0, index=df['int_id'], columns=year, dtype=np.int8)#pd.merge(df['int_id'], # merge data
+    
+    # use dict
+    primal = pd.DataFrame(data=0, index=year, columns=y_col_names, dtype=np.int8)
+    t6 = dict.fromkeys(df['int_id']) #TODO: numpy should be enough, save size
+    t6[167] = primal.copy()
+    t6[187] = primal.copy()
 
 
 if __name__ == '__main__':
