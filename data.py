@@ -14,6 +14,8 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import make_column_selector as selector
 from sklearn.model_selection import train_test_split
 
+import pickle
+
 
 def read_raw(name='IntDataV1.csv'):
     df_path = 'data/' + name
@@ -199,33 +201,54 @@ def load_datasets_severities_sum():
     return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names
 
 
-def load_datasets_severities_ind():
-    pass
-    new_y = read_new_y()
-    df = read_raw()
-    
-    y_col_names = ['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed']
-    new_y = new_y[y_col_names]
-    year = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019]
-    
-    # np.sort(new_y['year'].unique())
-    # [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019]
-    # input 2010 - 2018, predict 2019
-    
-    # new_y['int_id'].nunique() = 381513
-    # df['int_id'].nunique() = 707152
-    temp = new_y.head(10000)
-    
-    new_y_sparse = pd.DataFrame(data=0, index=df['int_id'], columns=year, dtype=np.int8)#pd.merge(df['int_id'], # merge data
-    
-    # use dict
-    primal = pd.DataFrame(data=0, index=year, columns=y_col_names, dtype=np.int8)
-    t6 = dict.fromkeys(df['int_id']) #TODO: numpy should be enough, save size
-    t6[167] = primal.copy()
-    t6[187] = primal.copy()
-
+def load_datasets_severities_ind(first_time=False):
+    if first_time:
+        new_y = read_new_y()
+        df = read_raw()
+        
+        y_col_names = ['int_id', 'year', 'sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed']
+        new_y = new_y[y_col_names]
+        year = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019] # input 2010 - 2018, predict 2019
+        
+        # new_y['int_id'].nunique() = 381513
+        # df['int_id'].nunique() = 707152
+        
+        # use dict
+        new_y_grouped_dict = {}
+        new_y_grouped = new_y.groupby('int_id')
+        for key, item in new_y_grouped:
+            new_y_grouped_dict[key] = new_y_grouped.get_group(key).set_index('year').drop(columns=['int_id'])
+        
+        # pad 0s
+        primal = pd.DataFrame(data=0, index=year, columns=y_col_names, dtype=np.int8)
+        new_y_grouped_dict_pad = dict.fromkeys(df['int_id']) 
+        
+        # TODO: check input in cs388
+        
+        for key in df['int_id']:
+            new_y_grouped_dict_pad[key] = primal.copy() # set 0 first
+            if key in new_y_grouped_dict:
+                new_y_grouped_dict_pad[key].update(new_y_grouped_dict[key])
+        
+        for key, value in new_y_grouped_dict_pad.items():
+            new_y_grouped_dict_pad[key] = new_y_grouped_dict_pad[key].to_numpy()
+            
+        new_y_ind = {'row_names': year,
+                     'col_names': y_col_names,
+                     'data': new_y_grouped_dict_pad}
+        
+        with open('data/y_mdl3.pickle', 'wb') as handle:
+            pickle.dump(new_y_ind, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            
+    else:
+        with open('data/y_mdl3.pickle', 'rb') as handle:
+            new_y_ind = pickle.load(handle)
+            
+    return new_y_ind
 
 if __name__ == '__main__':
     #df = read_data(is_feat_engineering=True)
     # df2 = read_data(name='tx_crash.csv', is_remove_cols=False)
-    X_train, y_train, X_val, y_val, X_test, y_test = load_datasets()
+    #X_train, y_train, X_val, y_val, X_test, y_test = load_datasets()
+    new_y_ind = load_datasets_severities_ind()
+    
