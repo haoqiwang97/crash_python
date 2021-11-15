@@ -164,33 +164,54 @@ class SensitivityNN():
             self.sensitivity_by_column_num(i)
             print(i, self.x_col_names[i], "--sensitivity calculated!")
             
-    def plot(self, is_save_figure=False, figure_name=None):
+    def plot(self, is_save_figure=False, figure_name=None, plot6=False):
         # plot sensitivity
-
+        # plot6: one severity on one plot
+        
         plot_label_names = []
         for value1 in self.x_col_names_compact:
             for value2 in self.y_col_names:
                 plot_label_names.append(value1 + ": " + value2)
         
         plot_values = np.array(self.sensitivity_list)
-        fig, ax = plt.subplots(figsize=[12, 40])
         
-        ax.barh(plot_label_names, plot_values.flatten())
-        ax.set(#xlim=(0, 10), ylim=(-2, 2),
-               #xlabel='x', ylabel='sin(x)',
-               title='Sensitivity analysis');
-        
-        #xticks = ax.get_xticks()
-        #ax.set_xticklabels(['{:,.2%}'.format(x) for x in xticks])
-        
-        plt.tight_layout()
-        
-        if is_save_figure:
-            name = figure_name + '.pdf'
-            fig.savefig(name)
+        if not plot6:
+            fig, ax = plt.subplots(figsize=[12, 40])
             
-        #return fig
-   
+            ax.barh(plot_label_names, plot_values.flatten())
+            ax.set(#xlim=(0, 10), ylim=(-2, 2),
+                   #xlabel='x', ylabel='sin(x)',
+                   title='Sensitivity analysis');
+            
+            #xticks = ax.get_xticks()
+            #ax.set_xticklabels(['{:,.2%}'.format(x) for x in xticks])
+            
+            plt.tight_layout()
+            
+            if is_save_figure:
+                name = figure_name + '.pdf'
+                fig.savefig(name)
+            return fig
+        else:
+            figs = []
+            outcome_len = len(self.y_col_names)
+            #pdb.set_trace()
+            for i in range(outcome_len):
+                fig, ax = plt.subplots(figsize=[12, 10])
+                ax.barh(self.x_col_names_compact, plot_values.flatten()[i::6])
+                title_text = 'Sensitivity analysis: ' + self.y_col_names[i]
+                ax.set(#xlim=(0, 10), ylim=(-2, 2),
+                       #xlabel='x', ylabel='sin(x)',
+                       title=title_text);
+                
+                plt.tight_layout()
+                figs.append(fig)
+                
+                if is_save_figure:
+                    for i in range(len(figs)):
+                        name = figure_name + '_' + self.y_col_names[i] + '.pdf'
+                        figs[i].savefig(name)
+            return figs
 
 
 # temp = SensitivityNN(model, torch.from_numpy(np.array(X_val)).float(), y_val, preprocessor.get_feature_names_out(), y_col_names)
@@ -234,3 +255,6 @@ if __name__ == '__main__':
     
     sens.calc_sensitivity()
     sens.plot(is_save_figure=True, figure_name="test2_val")
+    res = sens.plot(is_save_figure=True, figure_name="test3_train", plot6=True)
+    res = sens.plot(plot6=True)
+    #res[1].savefig("test333.pdf")
