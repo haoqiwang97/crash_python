@@ -51,7 +51,14 @@ if __name__ == '__main__':
               "\nX_val.shape", X_val.shape, "y_val.shape", y_val.shape,
               "\nX_test.shape", X_test.shape, "y_test.shape", y_test.shape)
         model = train_severity_sum_nn(args, X_train, y_train, X_val, y_val)
-    
+    elif args.model == "SeverityIndNN":
+        X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names = load_datasets_severities_ind()
+        print("X_train.shape", X_train.shape, "y_train.shape", y_train.shape,
+              "\nX_val.shape", X_val.shape, "y_val.shape", y_val.shape,
+              "\nX_test.shape", X_test.shape, "y_test.shape", y_test.shape)        
+        model = train_severity_sum_nn(args, X_train, y_train, X_val, y_val)
+        
+        
     model.to("cpu")
     print("=====Train Accuracy=====")
     train_eval = evaluate(args, model, X_train, y_train)

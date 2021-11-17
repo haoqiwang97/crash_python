@@ -185,3 +185,99 @@ def train_severity_sum_nn(args, X_train, y_train, X_val, y_val):
         print("Total loss on epoch %i: %f" % (epoch, total_loss))
         
     return severity_sum_nn
+
+
+class SeverityIndNN(nn.Module):
+    def __init__(self, inp, hid, out, n_geo_feats):
+        """
+        Construct the computation graph
+
+        Parameters
+        ----------
+        inp : int
+            size of input
+        hid : int
+            size of hidder layer
+        out : int
+            size of output
+
+        Returns
+        -------
+        None.
+
+        """
+        super(SeverityIndNN, self).__init__()
+    
+        self.gru = nn.GRU(input_size=inp,
+                          hidden_size=hid,
+                          num_layers=1,
+                          batch_first=False,
+                          dropout=0)
+        self.fc1 = nn.Linear(hid, n_geo_feats)
+        self.l1 = nn.ReLU()
+        self.fc2 = nn.Linear(n_geo_feats, out)
+
+        
+    def forward(self, x, geo_feats):
+        output, h_n = self.gru(x)
+        fc1_out = self.fc(output)
+        l1_out = self.l1(fc1_out)
+        
+        geo_out = self.fc2(geo_feats)
+
+        return geo_out
+        
+    def predict(self, x, geo_feats):
+        with torch.no_grad():
+            return self.forward(x)
+        
+
+def train_severity_ind_nn(args, X_train, y_train, X_val, y_val):
+    X_train = torch.from_numpy(np.array(X_train)).float()
+    y_train = torch.from_numpy(np.array(y_train)).float()
+    
+    inp_size = X_train.shape[1]
+    hid_size = args.hidden_size
+    out_size = y_train.shape[1]
+    
+    n_epochs = args.num_epochs
+    batch_size = args.batch_size
+    n_batches = int(len(X_train) / batch_size)
+    lr = args.lr
+    
+    device = args.device
+    severity_sum_nn = SeveritySumNN(inp_size, hid_size, out_size)
+    severity_sum_nn.to(device)
+    
+    optimizer = optim.Adam(severity_sum_nn.parameters(), lr=lr)
+    loss_func = nn.MSELoss()
+    
+    for epoch in range(0, n_epochs):
+        ex_indices = [i for i in range(0, len(X_train))]
+        random.shuffle(ex_indices)
+        total_loss = 0.0
+        
+        for batch_idx in range(n_batches):
+            # print("batch_idx", batch_idx)
+            batch_ex_indices = ex_indices[batch_idx * batch_size: (batch_idx + 1) * batch_size]
+            batch_loss = 0.0
+            
+        # for idx in batch_ex_indices:
+        # for idx in ex_indices:
+            X = X_train[batch_ex_indices].to(device)
+            y = y_train[batch_ex_indices].to(device)
+            
+            severity_sum_nn.zero_grad()
+            prediction = severity_sum_nn.forward(X)
+            loss = loss_func(prediction, y)
+            
+            # batch_loss += loss
+            total_loss += loss
+            
+        # batch_loss /= batch_size
+        # batch_loss.backward() # compute gradients
+            loss.backward()
+            optimizer.step() # apply gradients
+        print("Total loss on epoch %i: %f" % (epoch, total_loss))
+        
+    return severity_sum_nn

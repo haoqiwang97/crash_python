@@ -121,6 +121,21 @@ def transform_data_log1p(df, is_transform_y=True):
     return df
 
 
+def transform_data_ind(X):
+    numeric_transformer = StandardScaler()
+    categorical_transformer = OneHotEncoder()
+    
+    preprocessor = ColumnTransformer(transformers=[
+        ('num', numeric_transformer, selector(dtype_include="float64")),
+        ('cat', categorical_transformer, selector(dtype_include="int64"))
+        ])
+    
+    preprocessor.fit(X)
+    
+    X = preprocessor.transform(X)
+    return X, preprocessor
+
+    
 def transform_data_nn(X_train, X_val, X_test):
     # transform data for neural network
     numeric_transformer = StandardScaler()
@@ -201,6 +216,56 @@ def load_datasets_severities_sum():
     return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names
 
 
+class CrashExample:
+    x_temporal_row_names = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018]
+    x_temporal_col_names = ['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed']
+    geo_col_names = ['num__approaches', 'num__dist_near_school_mi',
+                     'num__dist_near_hops_mi', 'num__transit_stops_025mi_count',
+                     'num__sidewalk_lenght_150ft_ft', 'num__aadt_lane_major',
+                     'num__aadt_lane_minor', 'num__DVMT_major', 'num__lanes_major',
+                     'num__lane_width_ft_major', 'num__median_width_ft_major',
+                     'num__shoulder_width_ft_major', 'num__truck_perc_major',
+                     'num__DVMT_minor', 'num__lanes_minor', 'num__lane_width_ft_minor',
+                     'num__median_width_ft_minor', 'num__truck_perc_minor',
+                     'num__shoulder_width_ft_minor', 'num__f_unknown_minor',
+                     'num__speed_lim_mph_major', 'num__speed_lim_mph_minor',
+                     'num__tot_WMT', 'num__tot_WMT_pop', 'num__tot_WMT_sqmi',
+                     'cat__midblock_sig_0', 'cat__midblock_sig_1',
+                     'cat__signalized_ind_0', 'cat__signalized_ind_1',
+                     'cat__on_system_0', 'cat__on_system_1', 'cat__a_rural_0',
+                     'cat__a_rural_1', 'cat__a_small_urban_0', 'cat__a_small_urban_1',
+                     'cat__a_urbanized_0', 'cat__a_urbanized_1', 'cat__a_large_urban_0',
+                     'cat__a_large_urban_1', 'cat__f_local_major_0',
+                     'cat__f_local_major_1', 'cat__f_collector_major_0',
+                     'cat__f_collector_major_1', 'cat__f_arterial_major_0',
+                     'cat__f_arterial_major_1', 'cat__f_unknown_major_0',
+                     'cat__f_unknown_major_1', 'cat__d_1way_major_0',
+                     'cat__d_1way_major_1', 'cat__d_2way_undiv_major_0',
+                     'cat__d_2way_undiv_major_1', 'cat__d_2way_divid_major_0',
+                     'cat__d_2way_divid_major_1', 'cat__f_local_minor_0',
+                     'cat__f_local_minor_1', 'cat__f_collector_minor_0',
+                     'cat__f_collector_minor_1', 'cat__f_arterial_minor_0',
+                     'cat__f_arterial_minor_1', 'cat__d_1way_minor_0',
+                     'cat__d_1way_minor_1', 'cat__d_2way_undiv_minor_0',
+                     'cat__d_2way_undiv_minor_1', 'cat__d_2way_divid_minor_0',
+                     'cat__d_2way_divid_minor_1']
+    y_row_name = [2019]
+    
+    
+    def __init__(self, int_id, x_temporal, x_geo, y):
+        self.int_id = int_id
+        self.x_temporal = x_temporal
+        self.x_geo = x_geo
+        self.y = y
+        
+        
+    def __repr__(self):
+        return "x_temporal=" + repr(self.x_temporal) + "\n x_geo=" + repr(self.x_geo) + "\n y=" + repr(self.y)
+
+
+    def __str__(self):
+        return self.__repr__()    
+    
 def load_datasets_severities_ind(first_time=False):
     if first_time:
         new_y = read_new_y()
@@ -243,12 +308,46 @@ def load_datasets_severities_ind(first_time=False):
     else:
         with open('data/y_mdl3.pickle', 'rb') as handle:
             new_y_ind = pickle.load(handle)
-            
-    return new_y_ind
+    
+    df = read_raw()
+    
+    # drop some columns
+    cols_drop = ['descr', 'junction', 'center',
+                 'ped_crash_count', 
+                 'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor',
+                 'lon', 'lat',
+                 'tot_crash_count']
+    cols_log = ['log_DVMT_major',
+                'log_DVMT_minor',
+                'log_tot_WMT',
+                'log_tot_WMT_pop',
+                'log_tot_WMT_sqmi']
+    cols_drop.extend(cols_log)
+    df = df.drop(columns=cols_drop)
+    int_id = list(df.pop('int_id'))
+    X, preprocessor = transform_data_ind(df)
+    
+    #df.columns
+    exs = []
+    for i in range(len(int_id)):
+    #for i in range(10):
+        exs.append(
+            CrashExample(
+                int_id[i], 
+                new_y_ind['data'][int_id[i]][:9, :], #x_temporal, 
+                X[i], 
+                new_y_ind['data'][int_id[i]][9, :]#y
+                ))
+        
+        if i % 100000 == 0:
+            print("example: ", i)
+    return exs
+
 
 if __name__ == '__main__':
     #df = read_data(is_feat_engineering=True)
     # df2 = read_data(name='tx_crash.csv', is_remove_cols=False)
     #X_train, y_train, X_val, y_val, X_test, y_test = load_datasets()
-    new_y_ind = load_datasets_severities_ind()
+    #load_datasets_severities_sum()
+    exs = load_datasets_severities_ind()
     
