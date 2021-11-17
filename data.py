@@ -218,7 +218,7 @@ def load_datasets_severities_sum():
 
 class CrashExample:
     x_temporal_row_names = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018]
-    x_temporal_col_names = ['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed']
+    x_temporal_col_names = ['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count']
     geo_col_names = ['num__approaches', 'num__dist_near_school_mi',
                      'num__dist_near_hops_mi', 'num__transit_stops_025mi_count',
                      'num__sidewalk_lenght_150ft_ft', 'num__aadt_lane_major',
@@ -265,6 +265,7 @@ class CrashExample:
 
     def __str__(self):
         return self.__repr__()    
+    
     
 def load_datasets_severities_ind(first_time=False):
     if first_time:
@@ -329,19 +330,25 @@ def load_datasets_severities_ind(first_time=False):
     
     #df.columns
     exs = []
-    for i in range(len(int_id)):
-    #for i in range(10):
+    #for i in range(len(int_id)):
+    for i in range(1000):
+        a = new_y_ind['data'][int_id[i]]
+        b = new_y_ind['data'][int_id[i]].sum(axis=1)[:, np.newaxis]
+        new_y_ind_tot = np.hstack((a, b))
         exs.append(
             CrashExample(
                 int_id[i], 
-                new_y_ind['data'][int_id[i]][:9, :], #x_temporal, 
+                #new_y_ind['data'][int_id[i]][:9, :], #x_temporal, 
+                new_y_ind_tot[:9, :],
                 X[i], 
-                new_y_ind['data'][int_id[i]][9, :]#y
+                #new_y_ind['data'][int_id[i]][9, :]#y
+                new_y_ind_tot[9, :]
                 ))
         
         if i % 100000 == 0:
             print("example: ", i)
-    return exs
+    train_exs, test_exs = train_test_split(exs, test_size=0.05, random_state=1)
+    return train_exs, test_exs
 
 
 if __name__ == '__main__':
@@ -349,5 +356,6 @@ if __name__ == '__main__':
     # df2 = read_data(name='tx_crash.csv', is_remove_cols=False)
     #X_train, y_train, X_val, y_val, X_test, y_test = load_datasets()
     #load_datasets_severities_sum()
-    exs = load_datasets_severities_ind()
+    train_exs, test_exs = load_datasets_severities_ind()
+    
     
