@@ -9,10 +9,10 @@ import time
 def _parse_args():
     parser = argparse.ArgumentParser()
     #parser.add_argument('--model', type=str, default="TrivialNN", help="model to run")
-    # parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
-    parser.add_argument('--model', type=str, default="SeverityIndNN", help="model to run")
-    parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--num_epochs', type=int, default=100, help='number of epochs to train for')
+    parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
+    #parser.add_argument('--model', type=str, default="SeverityIndNN", help="model to run")
+    parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
+    parser.add_argument('--num_epochs', type=int, default=10, help='number of epochs to train for')
     parser.add_argument('--hidden_size', type=int, default=100, help='hidden layer size')
     parser.add_argument('--batch_size', type=int, default=100, help='training batch size; 1 by default')
     
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     elif args.model == "SeverityIndNN":
         train_exs, test_exs = load_datasets_severities_ind()
         print("train_exs.shape", len(train_exs), "; test_exs.shape", len(test_exs))
-        print("example", train_exs[0])
+        print("example\n", train_exs[0])
         model = train_severity_ind_nn(args, train_exs, test_exs)
         
         model.to("cpu")

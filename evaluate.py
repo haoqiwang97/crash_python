@@ -141,6 +141,18 @@ class SensitivityNN():
         self.sensitivity_list.append(np.mean((y_pred_new.numpy() - self.y_pred.numpy()) / self.y_pred.numpy(), axis=0))
         #.append(np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0))
 
+
+    def sensitivity_by_column_num2(self, col_idx):
+        # another way of calculate sensitivity
+        X_new = self.X.clone()
+        # select numerical variables
+        X_new[:, col_idx] += torch.std(X_new[:,col_idx])
+        y_pred_new = self.classifier.predict(X_new)
+        
+        # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
+        self.sensitivity_list.append((np.mean(y_pred_new.numpy()) - np.mean(self.y_pred.numpy())) / np.mean(self.y_pred.numpy(), axis=0))
+
+
     def sensitivity_by_column_cat(self, col_idx):
         X_new = self.X.clone()
         X_new[:, col_idx] = custom_replace(X_new[:, col_idx])
@@ -154,6 +166,18 @@ class SensitivityNN():
         y_pred_new = self.classifier.predict(X_new)
         # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
         self.sensitivity_list.append(np.mean((y_pred_new.numpy() - self.y_pred.numpy()) / self.y_pred.numpy(), axis=0))
+
+
+    def sensitivity_by_column_cat2(self, col_idx):
+        # another way of calculate sensitivity
+        X_new = self.X.clone()
+        X_new[:, col_idx] = custom_replace(X_new[:, col_idx])
+        X_new[:, col_idx+1] = custom_replace(X_new[:, col_idx+1])
+        
+        y_pred_new = self.classifier.predict(X_new)
+        # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
+        self.sensitivity_list.append((np.mean(y_pred_new.numpy()) - np.mean(self.y_pred.numpy())) / np.mean(self.y_pred.numpy(), axis=0))
+
         
     def calc_sensitivity(self):
         for i in self.num_features_list:
@@ -161,8 +185,20 @@ class SensitivityNN():
             print(i, self.x_col_names[i], "--sensitivity calculated!")
         
         for i in self.cat_features_list[::2]:
-            self.sensitivity_by_column_num(i)
+            self.sensitivity_by_column_cat(i)
             print(i, self.x_col_names[i], "--sensitivity calculated!")
+
+
+    def calc_sensitivity2(self):
+        # another way of calculate sensitivity
+        for i in self.num_features_list:
+            self.sensitivity_by_column_num2(i)
+            print(i, self.x_col_names[i], "--sensitivity calculated!")
+        
+        for i in self.cat_features_list[::2]:
+            self.sensitivity_by_column_cat2(i)
+            print(i, self.x_col_names[i], "--sensitivity calculated!")
+
             
     def plot(self, is_save_figure=False, figure_name=None, plot6=False):
         # plot sensitivity
@@ -255,6 +291,16 @@ if __name__ == '__main__':
     
     sens.calc_sensitivity()
     sens.plot(is_save_figure=True, figure_name="test2_val")
+    sens.plot(is_save_figure=True, figure_name="test2_train")
+    
+    res = sens.plot(is_save_figure=True, figure_name="test3_val", plot6=True)
     res = sens.plot(is_save_figure=True, figure_name="test3_train", plot6=True)
-    res = sens.plot(plot6=True)
     #res[1].savefig("test333.pdf")
+    
+    
+    sens.calc_sensitivity2()
+    sens.plot(is_save_figure=True, figure_name="test3_val_sens2")
+    sens.plot(is_save_figure=True, figure_name="test3_train_sens2")
+    
+    res = sens.plot(is_save_figure=True, figure_name="test3_val_sens2", plot6=True)
+    res = sens.plot(is_save_figure=True, figure_name="test3_train_sens2", plot6=True)
