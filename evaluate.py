@@ -23,10 +23,13 @@ def print_evaluation(y_val, y_val_pred):
         'rmse': mean_squared_error(y_val, y_val_pred, squared=False),
         'r2_score': r2_score(y_val, y_val_pred),
         'mean_absolute_error': mean_absolute_error(y_val, y_val_pred),
-        'mean_absolute_percentage_error': mean_absolute_percentage_error(y_val, y_val_pred),
+        #'mean_absolute_percentage_error': mean_absolute_percentage_error(y_val, y_val_pred),
         'median_absolute_error': median_absolute_error(y_val, y_val_pred),
         'explained_variance_score': explained_variance_score(y_val, y_val_pred)
     }
+    
+    for key, value in result_dict.items():
+        result_dict[key] = round(result_dict[key], 3)
     return result_dict
 
 
@@ -45,6 +48,8 @@ def print_evaluation_all(y_val, y_val_pred, y_train, y_train_pred):
         'explained_variance_score_train': explained_variance_score(y_train, y_train_pred),
         'explained_variance_score_val': explained_variance_score(y_val, y_val_pred)
     }
+    for key, value in result_dict.items():
+        result_dict[key] = round(result_dict[key], 3)
     return result_dict
 
 
@@ -225,8 +230,9 @@ class SensitivityNN():
             plt.tight_layout()
             
             if is_save_figure:
-                name = figure_name + '.pdf'
-                fig.savefig(name)
+                # name = figure_name + '.pdf'
+                name = figure_name + '.png'
+                fig.savefig(name, dpi=300)
             return fig
         else:
             figs = []
@@ -245,8 +251,9 @@ class SensitivityNN():
                 
                 if is_save_figure:
                     for i in range(len(figs)):
-                        name = figure_name + '_' + self.y_col_names[i] + '.pdf'
-                        figs[i].savefig(name)
+                        # name = figure_name + '_' + self.y_col_names[i] + '.pdf'
+                        name = figure_name + '_' + self.y_col_names[i] + '.png'
+                        figs[i].savefig(name, dpi=300)
             return figs
 
 
@@ -283,17 +290,22 @@ if __name__ == '__main__':
                           x_col_names=preprocessor.get_feature_names_out(), 
                           y_col_names=y_col_names)
     
+    sens.calc_sensitivity()
+    sens.plot(is_save_figure=True, figure_name="test2_val")    
+    res = sens.plot(is_save_figure=True, figure_name="test2_val", plot6=True)
+    
+    
     sens = SensitivityNN(classifier=model, 
                           X=torch.from_numpy(np.array(X_train)).float(), 
                           y=y_train, 
                           x_col_names=preprocessor.get_feature_names_out(), 
                           y_col_names=y_col_names)
     
-    sens.calc_sensitivity()
-    sens.plot(is_save_figure=True, figure_name="test2_val")
+    
+
     sens.plot(is_save_figure=True, figure_name="test2_train")
     
-    res = sens.plot(is_save_figure=True, figure_name="test3_val", plot6=True)
+    
     res = sens.plot(is_save_figure=True, figure_name="test3_train", plot6=True)
     #res[1].savefig("test333.pdf")
     

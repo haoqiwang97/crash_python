@@ -135,7 +135,7 @@ def transform_data_ind(X):
     X = preprocessor.transform(X)
     return X, preprocessor
 
-    
+"""    
 def transform_data_nn(X_train, X_val, X_test):
     # transform data for neural network
     numeric_transformer = StandardScaler()
@@ -166,6 +166,37 @@ def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_fea
     X_train, X_val, X_test, preprocessor = transform_data_nn(X_train, X_val, X_test)
     
     return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor
+"""
+
+def transform_data_nn(X_train, X_val):
+    # transform data for neural network
+    numeric_transformer = StandardScaler()
+    categorical_transformer = OneHotEncoder()
+    
+    preprocessor = ColumnTransformer(transformers=[
+        ('num', numeric_transformer, selector(dtype_include="float64")),
+        ('cat', categorical_transformer, selector(dtype_include="int64"))
+        ])
+    
+    preprocessor.fit(X_train)
+    
+    X_train = preprocessor.transform(X_train)
+    X_val = preprocessor.transform(X_val)
+    return X_train, X_val, preprocessor
+
+
+def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_feat_engineering=False, is_remove_lon_lat=False):
+    df = read_data(is_small=is_small, is_remove_cols=is_remove_cols, is_classify=is_classify, is_feat_engineering=is_feat_engineering, is_remove_lon_lat=is_remove_lon_lat)
+    
+    df_X = df.drop(columns='tot_crash_count')
+    df_y = df['tot_crash_count']
+    
+    X_train, X_val, y_train, y_val = train_test_split(df_X, df_y, test_size=0.2, random_state=1)
+    #X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=1)
+    
+    X_train, X_val, preprocessor = transform_data_nn(X_train, X_val)
+    
+    return X_train, y_train, X_val, y_val, preprocessor
 
 
 def read_new_y(path="data/crash_int_severities_years.csv"):
@@ -208,12 +239,12 @@ def load_datasets_severities_sum():
     y_col_names = ['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count']
     df_y = df[y_col_names]
     # split data
-    X_train, X_test, y_train, y_test = train_test_split(df_X, df_y, test_size=0.05, random_state=1)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.05, random_state=1)
+    X_train, X_val, y_train, y_val = train_test_split(df_X, df_y, test_size=0.2, random_state=1)
+    #X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.05, random_state=1)
     
-    X_train, X_val, X_test, preprocessor = transform_data_nn(X_train, X_val, X_test)
-    
-    return X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names
+    #X_train, X_val, X_test, preprocessor = transform_data_nn(X_train, X_val, X_test)
+    X_train, X_val, preprocessor = transform_data_nn(X_train, X_val)
+    return X_train, y_train, X_val, y_val, preprocessor, y_col_names
 
 
 class CrashExample:
@@ -330,8 +361,8 @@ def load_datasets_severities_ind(first_time=False):
     
     #df.columns
     exs = []
-    #for i in range(len(int_id)):
-    for i in range(1000):
+    for i in range(len(int_id)):
+    # for i in range(1000):
         a = new_y_ind['data'][int_id[i]]
         b = new_y_ind['data'][int_id[i]].sum(axis=1)[:, np.newaxis]
         new_y_ind_tot = np.hstack((a, b))
@@ -347,15 +378,26 @@ def load_datasets_severities_ind(first_time=False):
         
         if i % 100000 == 0:
             print("example: ", i)
-    train_exs, test_exs = train_test_split(exs, test_size=0.05, random_state=1)
+    train_exs, test_exs = train_test_split(exs, test_size=0.2, random_state=1)
     return train_exs, test_exs
 
 
+# visualize model
+def visualize_model(model, y_pred):
+    import os
+    os.environ["PATH"] += os.pathsep + 'C:\\Program Files (x86)\\Graphviz\\bin'
+    from torchviz import make_dot
+    
+    res = make_dot(y_pred, params=dict(model.named_parameters()), show_attrs=True, show_saved=True)
+    return res
+    
+    
 if __name__ == '__main__':
     #df = read_data(is_feat_engineering=True)
     # df2 = read_data(name='tx_crash.csv', is_remove_cols=False)
     #X_train, y_train, X_val, y_val, X_test, y_test = load_datasets()
     #load_datasets_severities_sum()
     train_exs, test_exs = load_datasets_severities_ind()
-    
-    
+    visualize_model(model, model(torch.from_numpy(np.array(X_val)).float()))
+
+    visualize_model(model, model(torch.from_numpy(test_exs[1].x_temporal).float(), torch.from_numpy(test_exs[1].x_geo).float()))

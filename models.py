@@ -219,11 +219,12 @@ class SeverityIndNN(nn.Module):
 
         
     def forward(self, x, geo_feats):
-        output, h_n = self.gru(x.float().unsqueeze(1)) # TODO: 1 is batch size
+        output, h_n = self.gru(x.float().unsqueeze(1))
         fc1_out = self.fc1(output)
         l1_out = self.l1(fc1_out)
         
         geo_out = self.fc2(geo_feats)
+        # add relu, fc
 
         return geo_out
         

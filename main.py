@@ -8,11 +8,11 @@ import time
 
 def _parse_args():
     parser = argparse.ArgumentParser()
-    #parser.add_argument('--model', type=str, default="TrivialNN", help="model to run")
-    parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
-    #parser.add_argument('--model', type=str, default="SeverityIndNN", help="model to run")
+    # parser.add_argument('--model', type=str, default="TrivialNN", help="model to run")
+    # parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
+    parser.add_argument('--model', type=str, default="SeverityIndNN", help="model to run")
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
-    parser.add_argument('--num_epochs', type=int, default=10, help='number of epochs to train for')
+    parser.add_argument('--num_epochs', type=int, default=15, help='number of epochs to train for')
     parser.add_argument('--hidden_size', type=int, default=100, help='hidden layer size')
     parser.add_argument('--batch_size', type=int, default=100, help='training batch size; 1 by default')
     
@@ -34,7 +34,7 @@ def evaluate(args, classifier, X_all, y_all):
     #     y_pred[idx] = classifier.predict(X)
         
     y_pred = classifier.predict(X_all)    
-    return print_evaluation(y_all, y_pred)
+    return print_evaluation(y_all, y_pred), y_pred
 
 
 def evaluate_rnn(args, classifier, exs):
@@ -49,7 +49,7 @@ def evaluate_rnn(args, classifier, exs):
     for idx, X in enumerate(exs):
         y_pred[idx, :] = classifier.predict(torch.from_numpy(exs[idx].x_temporal).float(), torch.from_numpy(exs[idx].x_geo).float())
         y_all[idx, :] = exs[idx].y
-    return print_evaluation(y_all, y_pred)
+    return print_evaluation(y_all, y_pred), y_pred
 
 
 if __name__ == '__main__':
@@ -59,36 +59,37 @@ if __name__ == '__main__':
     # Train and evaluate
     start_time = time.time()
     if args.model == "TrivialNN":
-        X_train, y_train, X_val, y_val, X_test, y_test, preprocessor = load_datasets(is_remove_lon_lat=True)
-        print("%i train exs, %i dev exs, %i test exs" % (len(y_train), len(y_val), len(y_test)))
+        # X_train, y_train, X_val, y_val, X_test, y_test, preprocessor = load_datasets(is_remove_lon_lat=True)
+        X_train, y_train, X_val, y_val, preprocessor = load_datasets(is_remove_lon_lat=True)
+        print("%i train exs, %i dev exs" % (len(y_train), len(y_val)))
         model = train_trivialnn(args, X_train, y_train, X_val, y_val)
 
         model.to("cpu")
-        print("=====Train Accuracy=====")
-        train_eval = evaluate(args, model, X_train, y_train)
+        print("=====Train Evaluation=====")
+        train_eval, train_y_pred = evaluate(args, model, X_train, y_train)
         print(train_eval)
         
-        print("=====Val Accuracy=====")
-        val_eval = evaluate(args, model, X_val, y_val)
+        print("=====Val Evaluation=====")
+        val_eval, val_y_pred = evaluate(args, model, X_val, y_val)
         print(val_eval)
         
         train_eval_time = time.time() - start_time
         print("Time for training and evaluation: %.2f seconds" % train_eval_time)
     
     elif args.model == "SeveritySumNN":
-        X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names = load_datasets_severities_sum()
+        # X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names = load_datasets_severities_sum()
+        X_train, y_train, X_val, y_val, preprocessor, y_col_names = load_datasets_severities_sum()
         print("X_train.shape", X_train.shape, "y_train.shape", y_train.shape,
-              "\nX_val.shape", X_val.shape, "y_val.shape", y_val.shape,
-              "\nX_test.shape", X_test.shape, "y_test.shape", y_test.shape)
+              "\nX_val.shape", X_val.shape, "y_val.shape", y_val.shape)
         model = train_severity_sum_nn(args, X_train, y_train, X_val, y_val)
 
         model.to("cpu")
-        print("=====Train Accuracy=====")
-        train_eval = evaluate(args, model, X_train, y_train)
+        print("=====Train Evaluation=====")
+        train_eval, train_y_pred = evaluate(args, model, X_train, y_train)
         print(train_eval)
         
-        print("=====Val Accuracy=====")
-        val_eval = evaluate(args, model, X_val, y_val)
+        print("=====Val Evaluation=====")
+        val_eval, val_y_pred = evaluate(args, model, X_val, y_val)
         print(val_eval)
         
         train_eval_time = time.time() - start_time
@@ -101,12 +102,12 @@ if __name__ == '__main__':
         model = train_severity_ind_nn(args, train_exs, test_exs)
         
         model.to("cpu")
-        print("=====Train Accuracy=====")
-        train_eval = evaluate_rnn(args, model, train_exs)
+        print("=====Train Evaluation=====")
+        train_eval, train_y_pred = evaluate_rnn(args, model, train_exs)
         print(train_eval)
         
-        print("=====Val Accuracy=====")
-        val_eval = evaluate_rnn(args, model, test_exs)
+        print("=====Val Evaluation=====")
+        val_eval, val_y_pred = evaluate_rnn(args, model, test_exs)
         print(val_eval)
         
         train_eval_time = time.time() - start_time
