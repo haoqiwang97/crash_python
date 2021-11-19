@@ -49,7 +49,7 @@ def evaluate_rnn(args, classifier, exs):
     for idx, X in enumerate(exs):
         y_pred[idx, :] = classifier.predict(torch.from_numpy(exs[idx].x_temporal).float(), torch.from_numpy(exs[idx].x_geo).float())
         y_all[idx, :] = exs[idx].y
-    return print_evaluation(y_all, y_pred), y_pred
+    return print_evaluation(y_all, y_pred), y_pred, y
 
 
 if __name__ == '__main__':
@@ -103,11 +103,11 @@ if __name__ == '__main__':
         
         model.to("cpu")
         print("=====Train Evaluation=====")
-        train_eval, train_y_pred = evaluate_rnn(args, model, train_exs)
+        train_eval, train_y_pred, train_y = evaluate_rnn(args, model, train_exs)
         print(train_eval)
         
         print("=====Val Evaluation=====")
-        val_eval, val_y_pred = evaluate_rnn(args, model, test_exs)
+        val_eval, val_y_pred, val_y = evaluate_rnn(args, model, test_exs)
         print(val_eval)
         
         train_eval_time = time.time() - start_time
@@ -120,4 +120,15 @@ if __name__ == '__main__':
     # # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
     # np.mean(t1, axis=0)
     # self.sensitivity_list.append(np.mean((t1.numpy() - t1.numpy()) / t1.numpy(), axis=0))
+
+# y_all = np.zeros_like(train_y_pred)
+# for idx, X in enumerate(train_exs):
+#     #y_pred[idx, :] = classifier.predict(torch.from_numpy(exs[idx].x_temporal).float(), torch.from_numpy(exs[idx].x_geo).float())
+#     y_all[idx, :] = train_exs[idx].y    
     
+# print_evaluation(np.zeros_like(val_y_pred), y_all)
+# print_evaluation(np.zeros_like(train_y_pred), y_all)
+
+# primal = np.array([0., 0., 0., 0., 0., 0.])
+# y_all[:1]==primal
+# np.sum(y_all==0) / y_all.size
