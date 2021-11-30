@@ -202,7 +202,7 @@ def load_datasets(is_small=False, is_remove_cols=True, is_classify=False, is_fea
 def read_new_y(path="data/crash_int_severities_years.csv"):
     # read y by severities
     new_y = pd.read_csv(path)
-    new_y['sev_small'] = new_y['sev_notinjured'] + new_y['sev_unknown']
+    new_y['sev_low'] = new_y['sev_notinjured'] + new_y['sev_unknown']
     return new_y
     
 
@@ -223,7 +223,7 @@ def load_datasets_severities_sum():
     df = df.drop(columns=cols_drop)
     
     new_y = read_new_y()
-    new_y = new_y.groupby(['int_id']).agg({'sev_small': 'sum',
+    new_y = new_y.groupby(['int_id']).agg({'sev_low': 'sum',
                                            'sev_incapac': 'sum',
                                            'sev_nonincapac': 'sum',
                                            'sev_possible': 'sum',
@@ -234,9 +234,9 @@ def load_datasets_severities_sum():
     df = df.fillna(0)
     df = df.drop(columns = ['int_id'])
     
-    df_X = df.drop(columns=['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count'])
+    df_X = df.drop(columns=['sev_low', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count'])
     
-    y_col_names = ['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count']
+    y_col_names = ['sev_low', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count']
     df_y = df[y_col_names]
     # split data
     X_train, X_val, y_train, y_val = train_test_split(df_X, df_y, test_size=0.2, random_state=1)
@@ -249,7 +249,7 @@ def load_datasets_severities_sum():
 
 class CrashExample:
     x_temporal_row_names = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018]
-    x_temporal_col_names = ['sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count']
+    x_temporal_col_names = ['sev_low', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count']
     geo_col_names = ['num__approaches', 'num__dist_near_school_mi',
                      'num__dist_near_hops_mi', 'num__transit_stops_025mi_count',
                      'num__sidewalk_lenght_150ft_ft', 'num__aadt_lane_major',
@@ -303,7 +303,7 @@ def load_datasets_severities_ind(first_time=False):
         new_y = read_new_y()
         df = read_raw()
         
-        y_col_names = ['int_id', 'year', 'sev_small', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed']
+        y_col_names = ['int_id', 'year', 'sev_low', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed']
         new_y = new_y[y_col_names]
         year = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019] # input 2010 - 2018, predict 2019
         
