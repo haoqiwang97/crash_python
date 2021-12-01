@@ -118,3 +118,6 @@ data/
 *.pdf
 *.png
 *.svg
+project1/val_sens2.csv
+project2/val_sens2.csv
+*.pickle

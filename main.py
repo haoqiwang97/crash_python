@@ -9,10 +9,10 @@ import time
 def _parse_args():
     parser = argparse.ArgumentParser()
     # parser.add_argument('--model', type=str, default="TrivialNN", help="model to run")
-    parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
-    # parser.add_argument('--model', type=str, default="SeverityIndNN", help="model to run")
+    # parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
+    parser.add_argument('--model', type=str, default="SeverityIndNN", help="model to run")
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
-    parser.add_argument('--num_epochs', type=int, default=15, help='number of epochs to train for')
+    parser.add_argument('--num_epochs', type=int, default=10, help='number of epochs to train for')
     parser.add_argument('--hidden_size', type=int, default=100, help='hidden layer size')
     parser.add_argument('--batch_size', type=int, default=100, help='training batch size; 1 by default')
     
@@ -49,7 +49,7 @@ def evaluate_rnn(args, classifier, exs):
     for idx, X in enumerate(exs):
         y_pred[idx, :] = classifier.predict(torch.from_numpy(exs[idx].x_temporal).float(), torch.from_numpy(exs[idx].x_geo).float())
         y_all[idx, :] = exs[idx].y
-    return print_evaluation(y_all, y_pred), y_pred, y
+    return print_evaluation(y_all, y_pred), y_pred, y_all
 
 
 if __name__ == '__main__':
@@ -61,6 +61,8 @@ if __name__ == '__main__':
     if args.model == "TrivialNN":
         # X_train, y_train, X_val, y_val, X_test, y_test, preprocessor = load_datasets(is_remove_lon_lat=True)
         X_train, y_train, X_val, y_val, preprocessor = load_datasets(is_remove_lon_lat=True)
+        y_col_names = []
+        y_col_names.append('tot_crash_count')
         print("%i train exs, %i dev exs" % (len(y_train), len(y_val)))
         model = train_trivialnn(args, X_train, y_train, X_val, y_val)
 

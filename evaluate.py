@@ -16,7 +16,7 @@ import torch
 
 import numpy as np
 import matplotlib.pyplot as plt
-
+import pandas as pd
 
 def print_evaluation(y_val, y_val_pred):
     result_dict = {
@@ -100,12 +100,12 @@ class SensitivityNN():
         self._features_list()
         # self.sensitivity_list = np.zeros((self.n_features, y.shape[1]))
         self.sensitivity_list = []
-    
+        self.get_plot_label_names()
+        
     def _y_pred(self, X, y):
         y_pred = np.zeros_like(y)
         for idx, X in enumerate(X):
             y_pred[idx] = self.classifier.predict(X)
-        # y_pred = self.classifier.predict(X)
         return y_pred
         
     def _features_list(self):
@@ -135,11 +135,6 @@ class SensitivityNN():
         # select numerical variables
         X_new[:, col_idx] += torch.std(X_new[:,col_idx])
 
-        # y_pred_new = np.zeros_like(self.y_pred)
-        # for idx, X in enumerate(X_new):
-        #     y_pred_new[idx] = self.classifier.predict(X)
-        
-        # y_pred_new = self._y_pred(X_new, self.y_pred)
         y_pred_new = self.classifier.predict(X_new)
         
         # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
@@ -163,11 +158,6 @@ class SensitivityNN():
         X_new[:, col_idx] = custom_replace(X_new[:, col_idx])
         X_new[:, col_idx+1] = custom_replace(X_new[:, col_idx+1])
         
-        # y_pred_new = np.zeros_like(self.y_pred)
-        # for idx, X in enumerate(X_new):
-        #     y_pred_new[idx] = self.classifier.predict(X)
-        
-        # y_pred_new = self._y_pred(X_new, self.y_pred)
         y_pred_new = self.classifier.predict(X_new)
         # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
         self.sensitivity_list.append(np.mean((y_pred_new.numpy() - self.y_pred.numpy()) / self.y_pred.numpy(), axis=0))
@@ -204,15 +194,18 @@ class SensitivityNN():
             self.sensitivity_by_column_cat2(i)
             print(i, self.x_col_names[i], "--sensitivity calculated!")
 
-            
-    def plot(self, is_save_figure=False, figure_name=None, plot6=False):
-        # plot sensitivity
-        # plot6: one severity on one plot
-        
+    def get_plot_label_names(self):
         plot_label_names = []
         for value1 in self.x_col_names_compact:
             for value2 in self.y_col_names:
                 plot_label_names.append(value1 + ": " + value2)
+        self.plot_label_names = plot_label_names
+
+    def plot(self, is_save_figure=False, figure_name=None, plot6=False):
+        # plot sensitivity
+        # plot6: one severity on one plot
+        
+        plot_label_names = self.plot_label_names
         
         plot_values = np.array(self.sensitivity_list)
         
@@ -224,16 +217,12 @@ class SensitivityNN():
                    #xlabel='x', ylabel='sin(x)',
                    title='Sensitivity analysis');
             
-            #xticks = ax.get_xticks()
-            #ax.set_xticklabels(['{:,.2%}'.format(x) for x in xticks])
-            
             plt.tight_layout()
             
             if is_save_figure:
                 # name = figure_name + '.pdf'
                 name = figure_name + '.png'
                 fig.savefig(name, dpi=300)
-            return fig
         else:
             figs = []
             outcome_len = len(self.y_col_names)
@@ -254,65 +243,59 @@ class SensitivityNN():
                         # name = figure_name + '_' + self.y_col_names[i] + '.pdf'
                         name = figure_name + '_' + self.y_col_names[i] + '.png'
                         figs[i].savefig(name, dpi=300)
-            return figs
 
-
-# temp = SensitivityNN(model, torch.from_numpy(np.array(X_val)).float(), y_val, preprocessor.get_feature_names_out(), y_col_names)
-# temp.y_pred
-# temp.col_names
-
-
-# temp.X[:,29]
-# custom_replace(temp.X[:,29])
-
-# temp.calc_sensitivity()
-# temp.sensitivity_list
-
-# t2 = np.array(temp.sensitivity_list)
-# t3 = t2.flatten()
-
-# plt.plot(t3)
-
-
-
-        
-#plt.barh(plot_label_names, t3)
-
-# import matplotlib.ticker as mtick
+    def spreadsheet(self, is_save_spreadsheet=False, spreadsheet_name=None):
+        if len(self.y_col_names) == 1:
+            spreadsheet = pd.DataFrame(list(zip(self.plot_label_names, np.squeeze(np.array(self.sensitivity_list)))))
+        else:
+            spreadsheet = pd.DataFrame(list(zip(self.plot_label_names, np.array(self.sensitivity_list).reshape(-1))))
+            
+        name = spreadsheet_name + '.csv'
+        spreadsheet.to_csv(name, header=False, index=False)
+            
+    def save_report(self, is_save=True, name=None, plot6=False):
+        self.plot(is_save_figure=is_save, figure_name=name, plot6=plot6)
+        self.spreadsheet(is_save_spreadsheet=is_save, spreadsheet_name=name)
 
 
 if __name__ == '__main__':
     pass
-
+    
+    # project1
     sens = SensitivityNN(classifier=model, 
                           X=torch.from_numpy(np.array(X_val)).float(), 
                           y=y_val, 
                           x_col_names=preprocessor.get_feature_names_out(), 
-                          y_col_names=y_col_names)
-    
-    sens.calc_sensitivity()
-    sens.plot(is_save_figure=True, figure_name="test2_val")    
-    res = sens.plot(is_save_figure=True, figure_name="test2_val", plot6=True)
-    
-    
-    sens = SensitivityNN(classifier=model, 
-                          X=torch.from_numpy(np.array(X_train)).float(), 
-                          y=y_train, 
-                          x_col_names=preprocessor.get_feature_names_out(), 
-                          y_col_names=y_col_names)
-    
-    
-
-    sens.plot(is_save_figure=True, figure_name="test2_train")
-    
-    
-    res = sens.plot(is_save_figure=True, figure_name="test3_train", plot6=True)
-    #res[1].savefig("test333.pdf")
-    
-    
+                          y_col_names=y_col_names)     
     sens.calc_sensitivity2()
-    sens.plot(is_save_figure=True, figure_name="test3_val_sens2")
-    sens.plot(is_save_figure=True, figure_name="test3_train_sens2")
+    # sens.plot(is_save_figure=True, figure_name="project1/val_sens2")
+    # sens.spreadsheet(is_save_spreadsheet=True, spreadsheet_name='project1/val_sens2')
+    sens.save_report(is_save=True, name="project1/val_sens2", plot6=False)
+    import pickle
+    with open('project1/val_sens2.pickle', 'wb') as handle:
+        pickle.dump(sens, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
+    # with open('project1/val_sens2.pickle', 'rb') as handle:
+    #     b = pickle.load(handle)    
     
-    res = sens.plot(is_save_figure=True, figure_name="test3_val_sens2", plot6=True)
-    res = sens.plot(is_save_figure=True, figure_name="test3_train_sens2", plot6=True)
+    
+    
+    # project2
+    sens = SensitivityNN(classifier=model, 
+                          X=torch.from_numpy(np.array(X_val)).float(), 
+                          y=y_val, 
+                          x_col_names=preprocessor.get_feature_names_out(), 
+                          y_col_names=y_col_names)     
+    sens.calc_sensitivity2()
+    # sens.plot(is_save_figure=True, figure_name="project2/val_sens2")
+    # sens.spreadsheet(is_save_spreadsheet=True, spreadsheet_name='project2/val_sens2')
+    sens.save_report(is_save=True, name="project2/val_sens2", plot6=True)
+    sens.save_report(is_save=True, name="project2/val_sens2", plot6=False)
+    import pickle
+    with open('project2/val_sens2.pickle', 'wb') as handle:
+        pickle.dump(sens, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
+    # with open('project1/val_sens2.pickle', 'rb') as handle:
+    #     b = pickle.load(handle)    
+    len(sens.plot_label_names)
+    np.array(sens.sensitivity_list).reshape(-1)

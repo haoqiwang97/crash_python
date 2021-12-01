@@ -17,10 +17,10 @@ from sklearn.model_selection import train_test_split
 import pickle
 
 
-def read_raw(name='IntDataV1.csv'):
+def read_raw(name="tx_crash.csv"):
     df_path = 'data/' + name
 
-    df = pd.read_csv(df_path).dropna()
+    df = pd.read_csv(df_path).dropna()#.query('aadt_lane_major > 100')
 
     df["midblock_sig"] = df["midblock_sig"].astype(np.int64)
     df["approaches"] = df["approaches"].astype(np.float64)
@@ -28,36 +28,33 @@ def read_raw(name='IntDataV1.csv'):
     
     cols_int_to_float = ['transit_stops_025mi_count',
         'lane_width_ft_major', 'median_width_ft_major', 'shoulder_width_ft_major',
-        'median_width_ft_minor']
+        'median_width_ft_minor', 'cen_tr_employ', 'cen_tr_pop']
     
     for i in cols_int_to_float:
         df[i] = df[i].astype(np.float64)
     return df
 
+# df = read_raw("tx_crash.csv")
+# df.junction.unique()
+# temp = df.query('aadt_lane_major > 100').sample(frac=0.001, random_state=1) # all junction == False, df.junction.unique() = array([False])
+# start from first model, correct read data functions
+# more columns, like GEOID will be removed
+# compare difference in columns of new data and the old one, narrow the scope
 
-def read_data(name='IntDataV1.csv', is_small=True, is_remove_cols=True, is_classify=True, is_feat_engineering=False, is_remove_lon_lat=False):
+
+def read_data(name="tx_crash.csv", is_small=True, is_remove_cols=True, is_classify=True, is_feat_engineering=False, is_remove_lon_lat=False):
     """
     Read all data
     correct column types, drop missing data
     remove junction, center, ped_crash_count, Austin, ped_crash_count_fatal columns
-    cols_all = ['int_id', 'signal', 'junction', 'midblock_sig', 'center', 'descr', 'lat', 'lon', 'Austin',
-            'ped_crash_count', 'ped_crash_count_fatal', 'signalized_ind', 'approaches', 'on_system',
-            'dist_near_school_mi', 'dist_near_hops_mi', 'transit_ind', 'transit_stops_025mi_count',
-            'sidewalk_lenght_150ft_ft', 'aadt_lane_major', 'aadt_lane_minor', 'a_rural', 'a_small_urban',
-            'a_urbanized',
-            'a_large_urban', 'DVMT_major', 'log_DVMT_major', 'lanes_major', 'lane_width_ft_major', 'median_major',
-            'median_width_ft_major', 'should_major', 'shoulder_width_ft_major', 'truck_perc_major', 'f_local_major',
-            'f_collector_major', 'f_arterial_major', 'f_unknown_major', 'd_1way_major', 'd_2way_undiv_major',
-            'd_2way_divid_major', 'DVMT_minor', 'log_DVMT_minor', 'lanes_minor', 'lane_width_ft_minor',
-            'median_minor',
-            'median_width_ft_minor', 'should_minor', 'truck_perc_minor', 'f_local_minor', 'shoulder_width_ft_minor',
-            'f_collector_minor', 'f_arterial_minor', 'f_unknown_minor', 'd_1way_minor', 'd_2way_undiv_minor',
-            'd_2way_divid_minor', 'speed_lim_mph_major', 'speed_lim_mph_minor', 'tot_WMT', 'tot_WMT_pop',
-            'tot_WMT_sqmi', 'log_tot_WMT', 'log_tot_WMT_pop', 'log_tot_WMT_sqmi', 'tot_crash_count']
     :return:
     """
-    cols_drop = ['int_id', 'descr', 'junction', 'center',
-                 'ped_crash_count', 'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor']
+    cols_drop = ['id', 'int_id', 'center', 'descr', 'GEOID', 'Austin', 
+                 'ped_crash_count_fatal', 'cen_tr_name',
+                 'junction',
+                 'ped_crash_count', 
+                 'signal', 'transit_ind', 'median_major', 'should_major', 
+                 'median_minor', 'should_minor']
 
     cols_log = ['log_DVMT_major',
                 'log_DVMT_minor',
@@ -210,10 +207,18 @@ def load_datasets_severities_sum():
     df = read_raw()
     
     # drop some columns
-    cols_drop = ['descr', 'junction', 'center',
+    # cols_drop = ['descr', 'junction', 'center',
+    #              'ped_crash_count', 
+    #              'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor',
+    #              'lon', 'lat']
+    cols_drop = ['id', 'center', 'descr', 'GEOID', 'Austin', 
+                 'ped_crash_count_fatal', 'cen_tr_name',
+                 'junction',
                  'ped_crash_count', 
-                 'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor',
+                 'signal', 'transit_ind', 'median_major', 'should_major', 
+                 'median_minor', 'should_minor',
                  'lon', 'lat']
+    
     cols_log = ['log_DVMT_major',
                 'log_DVMT_minor',
                 'log_tot_WMT',
@@ -344,11 +349,20 @@ def load_datasets_severities_ind(first_time=False):
     df = read_raw()
     
     # drop some columns
-    cols_drop = ['descr', 'junction', 'center',
+    # cols_drop = ['descr', 'junction', 'center',
+    #              'ped_crash_count', 
+    #              'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor',
+    #              'lon', 'lat',
+    #              'tot_crash_count']
+    cols_drop = ['id', 'center', 'descr', 'GEOID', 'Austin', 
+                 'ped_crash_count_fatal', 'cen_tr_name',
+                 'junction',
                  'ped_crash_count', 
-                 'Austin', 'ped_crash_count_fatal', 'signal', 'transit_ind', 'median_major', 'should_major', 'median_minor', 'should_minor',
+                 'signal', 'transit_ind', 'median_major', 'should_major', 
+                 'median_minor', 'should_minor',
                  'lon', 'lat',
                  'tot_crash_count']
+    
     cols_log = ['log_DVMT_major',
                 'log_DVMT_minor',
                 'log_tot_WMT',
@@ -397,7 +411,9 @@ if __name__ == '__main__':
     # df2 = read_data(name='tx_crash.csv', is_remove_cols=False)
     #X_train, y_train, X_val, y_val, X_test, y_test = load_datasets()
     #load_datasets_severities_sum()
-    train_exs, test_exs = load_datasets_severities_ind()
-    visualize_model(model, model(torch.from_numpy(np.array(X_val)).float()))
+    # train_exs, test_exs = load_datasets_severities_ind()
+    # visualize_model(model, model(torch.from_numpy(np.array(X_val)).float()))
 
-    visualize_model(model, model(torch.from_numpy(test_exs[1].x_temporal).float(), torch.from_numpy(test_exs[1].x_geo).float()))
+    # visualize_model(model, model(torch.from_numpy(test_exs[1].x_temporal).float(), torch.from_numpy(test_exs[1].x_geo).float()))
+    
+    df = read_data(is_classify=False, is_remove_lon_lat=True)
