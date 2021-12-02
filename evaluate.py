@@ -150,9 +150,9 @@ class SensitivityNN():
         y_pred_new = self.classifier.predict(X_new)
         
         # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
-        self.sensitivity_list.append((np.mean(y_pred_new.numpy()) - np.mean(self.y_pred.numpy())) / np.mean(self.y_pred.numpy(), axis=0))
-
-
+        self.sensitivity_list.append((np.mean(y_pred_new.numpy(), axis=0) - np.mean(self.y_pred.numpy(), axis=0)) / np.mean(self.y_pred.numpy(), axis=0))
+        
+        
     def sensitivity_by_column_cat(self, col_idx):
         X_new = self.X.clone()
         X_new[:, col_idx] = custom_replace(X_new[:, col_idx])
@@ -171,7 +171,7 @@ class SensitivityNN():
         
         y_pred_new = self.classifier.predict(X_new)
         # self.sensitivity_list[col_idx, :] = np.mean((y_pred_new - self.y_pred) / self.y_pred, axis=0)
-        self.sensitivity_list.append((np.mean(y_pred_new.numpy()) - np.mean(self.y_pred.numpy())) / np.mean(self.y_pred.numpy(), axis=0))
+        self.sensitivity_list.append((np.mean(y_pred_new.numpy(), axis=0) - np.mean(self.y_pred.numpy(), axis=0)) / np.mean(self.y_pred.numpy(), axis=0))
 
         
     def calc_sensitivity(self):
@@ -299,3 +299,4 @@ if __name__ == '__main__':
     #     b = pickle.load(handle)    
     len(sens.plot_label_names)
     np.array(sens.sensitivity_list).reshape(-1)
+
