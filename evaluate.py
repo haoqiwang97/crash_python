@@ -205,14 +205,14 @@ class SensitivityNN():
         # plot sensitivity
         # plot6: one severity on one plot
         
-        plot_label_names = self.plot_label_names
+        #plot_label_names = self.plot_label_names
         
         plot_values = np.array(self.sensitivity_list)
         
         if not plot6:
             fig, ax = plt.subplots(figsize=[12, 40])
             
-            ax.barh(plot_label_names, plot_values.flatten())
+            ax.barh(self.x_col_names_compact, plot_values.flatten())
             ax.set(#xlim=(0, 10), ylim=(-2, 2),
                    #xlabel='x', ylabel='sin(x)',
                    title='Sensitivity analysis');
@@ -246,7 +246,7 @@ class SensitivityNN():
 
     def spreadsheet(self, is_save_spreadsheet=False, spreadsheet_name=None):
         if len(self.y_col_names) == 1:
-            spreadsheet = pd.DataFrame(list(zip(self.plot_label_names, np.squeeze(np.array(self.sensitivity_list)))))
+            spreadsheet = pd.DataFrame(list(zip(self.x_col_names_compact, np.squeeze(np.array(self.sensitivity_list)))))
         else:
             spreadsheet = pd.DataFrame(list(zip(self.plot_label_names, np.array(self.sensitivity_list).reshape(-1))))
             
@@ -299,4 +299,12 @@ if __name__ == '__main__':
     #     b = pickle.load(handle)    
     len(sens.plot_label_names)
     np.array(sens.sensitivity_list).reshape(-1)
-
+    
+    # project3
+    import pickle
+    with open('project3/model.pickle', 'wb') as handle:
+        pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('project3/model.pickle', 'rb') as handle:
+        model2 = pickle.load(handle)
+    
+    temp = evaluate_rnn(args, model2, test_exs)

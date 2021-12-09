@@ -9,11 +9,14 @@ import time
 def _parse_args():
     parser = argparse.ArgumentParser()
     # parser.add_argument('--model', type=str, default="TrivialNN", help="model to run")
-    parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
+    # parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
     # parser.add_argument('--model', type=str, default="SeverityIndNN", help="model to run")
+    # parser.add_argument('--model', type=str, default="SeveritySumNN_IndNN", help="model to run")
+    parser.add_argument('--model', type=str, default="SeverityIndNN2", help="model to run")
+    
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
-    parser.add_argument('--num_epochs', type=int, default=10, help='number of epochs to train for')
-    parser.add_argument('--hidden_size', type=int, default=100, help='hidden layer size')
+    parser.add_argument('--num_epochs', type=int, default=20, help='number of epochs to train for')
+    parser.add_argument('--hidden_size', type=int, default=50, help='hidden layer size')
     parser.add_argument('--batch_size', type=int, default=100, help='training batch size; 1 by default')
     
     parser.add_argument('--device', default="cuda:0")
@@ -115,7 +118,49 @@ if __name__ == '__main__':
         train_eval_time = time.time() - start_time
         print("Time for training and evaluation: %.2f seconds" % train_eval_time)        
 
-    
+
+
+    elif args.model == "SeveritySumNN_IndNN":
+        # compare with SeverityIndNN, which knows previous history
+        
+        # X_train, y_train, X_val, y_val, X_test, y_test, preprocessor, y_col_names = load_datasets_severities_sum()
+        X_train, y_train, X_val, y_val, preprocessor, y_col_names = load_datasets_severities_ind_sum()
+        
+        print("X_train.shape", X_train.shape, "y_train.shape", y_train.shape,
+              "\nX_val.shape", X_val.shape, "y_val.shape", y_val.shape)
+        model = train_severity_sum_nn(args, X_train, y_train, X_val, y_val)
+
+        model.to("cpu")
+        print("=====Train Evaluation=====")
+        train_eval, train_y_pred = evaluate(args, model, X_train, y_train)
+        print(train_eval)
+        
+        print("=====Val Evaluation=====")
+        val_eval, val_y_pred = evaluate(args, model, X_val, y_val)
+        print(val_eval)
+        
+        train_eval_time = time.time() - start_time
+        print("Time for training and evaluation: %.2f seconds" % train_eval_time)
+
+
+    elif args.model == "SeverityIndNN2":
+        # another versio of merging features
+        train_exs, test_exs = load_datasets_severities_ind()
+        print("train_exs.shape", len(train_exs), "; test_exs.shape", len(test_exs))
+        print("example\n", train_exs[0])
+        model = train_severity_ind_nn2(args, train_exs, test_exs)
+        
+        model.to("cpu")
+        print("=====Train Evaluation=====")
+        train_eval, train_y_pred, train_y = evaluate_rnn(args, model, train_exs)
+        print(train_eval)
+        
+        print("=====Val Evaluation=====")
+        val_eval, val_y_pred, val_y = evaluate_rnn(args, model, test_exs)
+        print(val_eval)
+        
+        train_eval_time = time.time() - start_time
+        print("Time for training and evaluation: %.2f seconds" % train_eval_time)        
     # t1 = model.predict(torch.from_numpy(np.array(X_val)).float())
     # # y_pred_new = self.classifier.predict(X_new)
     

@@ -325,8 +325,6 @@ def load_datasets_severities_ind(first_time=False):
         primal = pd.DataFrame(data=0, index=year, columns=y_col_names, dtype=np.int8)
         new_y_grouped_dict_pad = dict.fromkeys(df['int_id']) 
         
-        # TODO: check input in cs388
-        
         for key in df['int_id']:
             new_y_grouped_dict_pad[key] = primal.copy() # set 0 first
             if key in new_y_grouped_dict:
@@ -396,6 +394,47 @@ def load_datasets_severities_ind(first_time=False):
     return train_exs, test_exs
 
 
+def load_datasets_severities_ind_sum():
+    new_y = read_new_y().drop(columns=['sev_notinjured', 'sev_unknown']).query('year == 2019')
+
+    df = read_raw()
+    cols_drop = ['id', 'center', 'descr', 'GEOID', 'Austin', 
+                 'ped_crash_count_fatal', 'cen_tr_name',
+                 'junction',
+                 'ped_crash_count', 
+                 'signal', 'transit_ind', 'median_major', 'should_major', 
+                 'median_minor', 'should_minor',
+                 'lon', 'lat']
+    
+    cols_log = ['log_DVMT_major',
+                'log_DVMT_minor',
+                'log_tot_WMT',
+                'log_tot_WMT_pop',
+                'log_tot_WMT_sqmi']
+    cols_drop.extend(cols_log)
+    df = df.drop(columns=cols_drop)
+
+    
+    # merge data
+    df = pd.merge(df, new_y, how='left', on='int_id')
+    df = df.fillna(0)
+    df = df.drop(columns = ['int_id', 'year'])
+
+    df['tot_crash_count'] = df['sev_low'] + df['sev_incapac'] + df['sev_nonincapac'] + df['sev_possible'] + df['sev_killed']
+    
+    df_X = df.drop(columns=['sev_low', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count'])
+    
+    y_col_names = ['sev_low', 'sev_incapac', 'sev_nonincapac', 'sev_possible', 'sev_killed', 'tot_crash_count']
+    df_y = df[y_col_names]
+        
+    # split data
+    X_train, X_val, y_train, y_val = train_test_split(df_X, df_y, test_size=0.2, random_state=1)
+    #X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.05, random_state=1)
+    
+    #X_train, X_val, X_test, preprocessor = transform_data_nn(X_train, X_val, X_test)
+    X_train, X_val, preprocessor = transform_data_nn(X_train, X_val)
+    return X_train, y_train, X_val, y_val, preprocessor, y_col_names
+        
 # visualize model
 def visualize_model(model, y_pred):
     import os

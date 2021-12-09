@@ -121,3 +121,4 @@ data/
 project1/val_sens2.csv
 project2/val_sens2.csv
 *.pickle
+sens_vis.Rmd
