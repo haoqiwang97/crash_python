@@ -9,13 +9,13 @@ import time
 def _parse_args():
     parser = argparse.ArgumentParser()
     # parser.add_argument('--model', type=str, default="TrivialNN", help="model to run")
-    # parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
+    parser.add_argument('--model', type=str, default="SeveritySumNN", help="model to run")
     # parser.add_argument('--model', type=str, default="SeverityIndNN", help="model to run")
     # parser.add_argument('--model', type=str, default="SeveritySumNN_IndNN", help="model to run")
-    parser.add_argument('--model', type=str, default="SeverityIndNN2", help="model to run")
+    # parser.add_argument('--model', type=str, default="SeverityIndNN2", help="model to run")
     
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
-    parser.add_argument('--num_epochs', type=int, default=20, help='number of epochs to train for')
+    parser.add_argument('--num_epochs', type=int, default=10, help='number of epochs to train for')
     parser.add_argument('--hidden_size', type=int, default=50, help='hidden layer size')
     parser.add_argument('--batch_size', type=int, default=100, help='training batch size; 1 by default')
     

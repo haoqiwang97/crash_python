@@ -229,10 +229,11 @@ class SensitivityNN():
             #pdb.set_trace()
             for i in range(outcome_len):
                 fig, ax = plt.subplots(figsize=[12, 10])
-                ax.barh(self.x_col_names_compact, plot_values.flatten()[i::6])
-                title_text = 'Sensitivity analysis: ' + self.y_col_names[i]
+                ax.barh(self.x_col_names_compact, plot_values.flatten()[i::6] * 100)
+                title_text = 'Total crash count by severities sensitivity analysis: ' + self.y_col_names[i]
                 ax.set(#xlim=(0, 10), ylim=(-2, 2),
-                       #xlabel='x', ylabel='sin(x)',
+                       xlabel='Percentage change in total crashes (%)', 
+                       # ylabel='sin(x)',
                        title=title_text);
                 
                 plt.tight_layout()
@@ -296,7 +297,7 @@ if __name__ == '__main__':
         pickle.dump(sens, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
     # with open('project1/val_sens2.pickle', 'rb') as handle:
-    #     b = pickle.load(handle)    
+    #     sens = pickle.load(handle)    
     len(sens.plot_label_names)
     np.array(sens.sensitivity_list).reshape(-1)
     
