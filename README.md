@@ -1,5 +1,7 @@
 # crash_python
  
+Report: https://github.com/haoqiwang97/crash_python/blob/main/report.pdf
+
 ```angular2html
 - data/ # data files stored in box
 
